@@ -41,14 +41,9 @@ void il_Graphics_testError_(const char *file, int line, const char *func,
 
 GLuint il_Graphics_makeShader(GLenum type, const char* source) {
   GLuint shader = glCreateShader(type);
-  IL_GRAPHICS_TESTERROR("Unable to create shader");
-
   glShaderSource(shader, 1, &source, NULL);
-  IL_GRAPHICS_TESTERROR("Unable to set shader source");
-
   glCompileShader(shader);
-  IL_GRAPHICS_TESTERROR("Unable to compile shader");
-
+  
   GLint status, len;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
   glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
@@ -68,7 +63,6 @@ GLuint il_Graphics_makeShader(GLenum type, const char* source) {
 
 void il_Graphics_linkProgram(GLuint program) {
   glLinkProgram(program);
-  IL_GRAPHICS_TESTERROR("Unable to link program");
   
   GLint status, len;
   glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -84,7 +78,6 @@ void il_Graphics_linkProgram(GLuint program) {
   }
   
   glValidateProgram(program);
-  IL_GRAPHICS_TESTERROR("Unable to validate program");
   
   glGetProgramiv(program, GL_LINK_STATUS, &status);
   glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
