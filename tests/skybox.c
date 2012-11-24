@@ -2,6 +2,7 @@
 #include <GL/glfw.h>
 #include <stdio.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "helpers.h"
 #include "glutil.h"
@@ -20,7 +21,7 @@ static const struct {
      0.5f, -0.5f,  0.5f, 
      0.5f, -0.5f, -0.5f, 
      0.5f,  0.5f, -0.5f, 
-     0.5f,  0.5f,  0.5f
+     0.5f,  0.5f,  0.5f,
      
     -0.5f, -0.5f,  0.5f,
      0.5f, -0.5f,  0.5f,
@@ -43,17 +44,17 @@ static const struct {
      0.5f, -0.5f, -0.5f
   },
   { // texcoord
-    0, 0,  1, 0,  1, 1,  0, 1,
-    0, 0,  1, 0,  1, 1,  0, 1,
-    0, 0,  1, 0,  1, 1,  0, 1,
-    0, 0,  1, 0,  1, 1,  0, 1,
-    0, 0,  1, 0,  1, 1,  0, 1,
-    0, 0,  1, 0,  1, 1,  0, 1 
+    0, 1,  1, 1,  1, 0,  0, 0,
+    0, 1,  1, 1,  1, 0,  0, 0,
+    0, 1,  1, 1,  1, 0,  0, 0,
+    0, 1,  1, 1,  1, 0,  0, 0,
+    0, 1,  1, 1,  1, 0,  0, 0,
+    0, 1,  1, 1,  1, 0,  0, 0,
   }
 };
 
 static unsigned char texdata[] = {
-  0,   0,   0,   255,
+  255, 255, 255, 255,
   0,   0,   255, 255,
   0,   255, 0,   255,
   255, 0,   0,   255
@@ -90,8 +91,6 @@ void testbed_init(int argc, char **argv)
   // skybox.texcoord
   glVertexAttribPointer(1, 2, GL_UNSIGNED_BYTE, GL_FALSE, 0, 
     (void*)((char*)&skybox.texcoord - (char*)&skybox));
-  printf("(char*)&skybox.texcoord - (char*)&skybox == %p\n", 
-    (char*)&skybox.texcoord - (char*)&skybox);
   glEnableVertexAttribArray(1);
   
   il_Graphics_linkProgram(program);
@@ -103,28 +102,28 @@ void testbed_init(int argc, char **argv)
   glGenTextures(6, &textures[0]);
   glBindTexture(GL_TEXTURE_2D, textures[0]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, textures[1]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, textures[2]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, textures[3]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, textures[4]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, textures[5]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   
   glUseProgram(program);
   
@@ -134,27 +133,33 @@ void testbed_init(int argc, char **argv)
 void testbed_draw()
 {
   // rotation
-  sg_Matrix mat = sg_Matrix_perspective(90, 4/3.0, 0.001, sqrt(2));
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  float angle = (tv.tv_sec%4 + (tv.tv_usec/1000000.0))/4 * M_PI * 2;
+  sg_Matrix mat = sg_Matrix_mul(
+    sg_Matrix_perspective(90, 4/3.0, 0.001, sqrt(2)),
+    sg_Matrix_rotate_v(angle, (sg_Vector3){0,1,0})
+  );
   glUniformMatrix4fv(rotation_loc, 1, GL_TRUE, (const GLfloat*)&mat.data);
   // sampler
   glUniform1i(tex_loc, 0);
   
   // Render the front quad
   glBindTexture(GL_TEXTURE_2D, textures[0]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   // Render the left quad
   glBindTexture(GL_TEXTURE_2D, textures[1]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 4, 4);
   // Render the back quad
   glBindTexture(GL_TEXTURE_2D, textures[2]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 8, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
   // Render the right quad
   glBindTexture(GL_TEXTURE_2D, textures[3]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 12, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
   // Render the top quad
   glBindTexture(GL_TEXTURE_2D, textures[4]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
   // Render the bottom quad
   glBindTexture(GL_TEXTURE_2D, textures[5]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
+  glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
 }

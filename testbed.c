@@ -11,6 +11,7 @@ void testbed(int argc, char **argv)
   testbed_init(argc, argv);
   printf("Beginning loop\n");
   while(1) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     testbed_draw();
     glfwSwapBuffers();
     if (glfwGetWindowParam(GLFW_OPENED) == GL_FALSE)

@@ -55,8 +55,15 @@ sg_Matrix sg_Matrix_translate(sg_Vector3 t) {
   return n;
 }
 
+/*
+   x^2(1-c)+c     xy(1-c)-zs     xz(1-c)+ys     0
+   yx(1-c)+zs     y^2(1-c)+c     yz(1-c)-xs     0
+   xz(1-c)-ys     yz(1-c)+xs     z^2(1-c)+c     0
+        0              0               0        1
+*/
 sg_Matrix sg_Matrix_rotate_v(float a, sg_Vector3 n) {
   sg_Matrix b;
+  memset(&b, 0, sizeof(b));
   float c = cosf(a);
   float s = sinf(a);
   b.data[0] = n.x*n.x*(1-c)+c;
@@ -70,6 +77,8 @@ sg_Matrix sg_Matrix_rotate_v(float a, sg_Vector3 n) {
   b.data[8] = n.x*n.z*(1-c)-(n.y*s);
   b.data[9] = n.y*n.z*(1-c)+(n.x*s);
   b.data[10]= n.z*n.z*(1-c)+c;
+  
+  b.data[15] = 1.0;
   
   return b;
 }
