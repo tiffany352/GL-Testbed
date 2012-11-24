@@ -63,14 +63,26 @@ GLuint vao, vbo, program, vertshader, fragshader, textures[6], rotation_loc, tex
 
 void testbed_init(int argc, char **argv)
 {
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  
   printf("skybox.c\n");
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(skybox), &skybox, GL_STATIC_DRAW);
   printf("vbo = %u\n", vbo);
   
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  vertshader = il_Graphics_makeShader(GL_VERTEX_SHADER, 
+    read_file("data/skybox.vert")), 
+  fragshader = il_Graphics_makeShader(GL_FRAGMENT_SHADER, 
+    read_file("data/skybox.frag"));
+  
+  program = glCreateProgram();
+  glAttachShader(program, vertshader);
+  glAttachShader(program, fragshader);
+  
+  glBindAttribLocation(program, 0, "in_Position");
+  glBindAttribLocation(program, 1, "in_Texcoord");
   
   // skybox.pos
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -82,36 +94,37 @@ void testbed_init(int argc, char **argv)
     (char*)&skybox.texcoord - (char*)&skybox);
   glEnableVertexAttribArray(1);
   
-  vertshader = il_Graphics_makeShader(GL_VERTEX_SHADER, 
-    read_file("data/skybox.vert")), 
-  fragshader = il_Graphics_makeShader(GL_FRAGMENT_SHADER, 
-    read_file("data/skybox.frag"));
-  
-  program = glCreateProgram();
-  glAttachShader(program, vertshader);
-  glAttachShader(program, fragshader);
-  
   il_Graphics_linkProgram(program);
   
   rotation_loc = glGetUniformLocation(program, "rotation");
+  
   tex_loc = glGetUniformLocation(program, "tex");
   
   glGenTextures(6, &textures[0]);
   glBindTexture(GL_TEXTURE_2D, textures[0]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBindTexture(GL_TEXTURE_2D, textures[1]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBindTexture(GL_TEXTURE_2D, textures[2]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBindTexture(GL_TEXTURE_2D, textures[3]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBindTexture(GL_TEXTURE_2D, textures[4]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glBindTexture(GL_TEXTURE_2D, textures[5]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, &texdata[0]);
-
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   
   glUseProgram(program);
   
