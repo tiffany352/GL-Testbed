@@ -137,8 +137,8 @@ void testbed_draw()
   gettimeofday(&tv, NULL);
   float angle = (tv.tv_sec%4 + (tv.tv_usec/1000000.0))/4 * M_PI * 2;
   sg_Matrix mat = sg_Matrix_mul(
-    sg_Matrix_perspective(90, 4/3.0, 0.001, sqrt(2)),
-    sg_Matrix_rotate_v(angle, (sg_Vector3){0,1,0})
+    sg_Matrix_perspective(30, 4/3.0, 0.001, 10),
+    sg_Matrix_rotate_v(angle, (sg_Vector3){0.242,0.970,0})
   );
   glUniformMatrix4fv(rotation_loc, 1, GL_TRUE, (const GLfloat*)&mat.data);
   // sampler
