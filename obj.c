@@ -579,13 +579,6 @@ GLuint obj_to_gl(obj_mesh *mesh, GLint *count)
     OBJ_TRIANGLES, OBJ_INTERLEAVED, &size);
   *count = size/stride;
   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-  
-  int i;
-  for (i = 0; i < size/sizeof(GLfloat); i++) {
-    printf("%f, ", data[i]);
-  }
-  puts("\n");
-  
   free(data);
   
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, NULL);
