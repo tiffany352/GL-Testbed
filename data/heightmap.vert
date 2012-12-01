@@ -77,9 +77,12 @@ float snoise(vec2 v)
 
 in vec2 in_Position;
 uniform vec2 offset;
+uniform vec2 center;
 uniform mat4 mvp;
+uniform vec3 camera_pos;
 out vec3 pos;
 out vec3 normal;
+out vec3 light_color;
 
 float gen_noise(vec2 v)
 {
@@ -95,12 +98,33 @@ float gen_noise(vec2 v)
 
 void main()
 {
-  float noise = gen_noise(in_Position + offset);
+  vec3 lightpos = normalize(vec3(1.0, 1.0, 0.0));
+  vec3 ambient = vec3(1.0);
+  float aconst = 0.2;
+  vec3 diffuse = vec3(1.0);
+  float dconst = .7;
+  vec3 specular = vec3(1.0);
+  float sconst = .5;
+  float shiny = 2;
+
+  float noise = gen_noise(in_Position + offset + center);
   pos = vec3(in_Position.x + offset.x, noise, in_Position.y + offset.y);
 
   float sx = gen_noise(vec2(pos.x+1, pos.y)) - gen_noise(vec2(pos.x-1, pos.y));
   float sy = gen_noise(vec2(pos.x, pos.y+1)) - gen_noise(vec2(pos.x, pos.y-1));
   normal = normalize(vec3(-sx, 2, sy));
+  
+  light_color = vec3(0);
+  light_color += ambient * aconst;
+  
+  float lambert = dot(normal, lightpos);
+  if (lambert > 0) {
+    vec3 r = reflect(-lightpos, normal);
+    vec3 viewer = normalize(pos - camera_pos);
+    
+    light_color += diffuse * dconst * lambert;
+    light_color += specular * pow(max(dot(r, viewer), 0), shiny) * sconst;
+  }
   
   gl_Position = mvp * vec4(pos.xyz, 1.0);
 }

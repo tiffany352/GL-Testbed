@@ -12,8 +12,9 @@
 #include "data/rock.h"
 
 #define MAX_LOD 1
-GLuint program, vertshader, fragshader, vao, vbo[MAX_LOD], tex, mvp_loc, offset_loc, tex_loc;
+GLuint program, vertshader, fragshader, vao, vbo[MAX_LOD], tex, mvp_loc, offset_loc, tex_loc, pos_loc, center_loc;
 int vbo_bound;
+int seed;
 
 GLuint load_img(int width, int height, char *ptr)
 {
@@ -28,15 +29,18 @@ GLuint load_img(int width, int height, char *ptr)
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, 
     GL_RGB, GL_UNSIGNED_BYTE, img);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
   free(img);
   return tex;
 }
 
 void testbed_init(int argc, char **argv)
 {
+  srand(time(NULL));
+  seed = rand();
+
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
   
@@ -87,6 +91,8 @@ void testbed_init(int argc, char **argv)
   mvp_loc = glGetUniformLocation(program, "mvp");
   offset_loc = glGetUniformLocation(program, "offset");
   tex_loc = glGetUniformLocation(program, "tex");
+  pos_loc = glGetUniformLocation(program, "camera_pos");
+  center_loc = glGetUniformLocation(program, "center");
   
   glUseProgram(program);
   
@@ -94,6 +100,8 @@ void testbed_init(int argc, char **argv)
   glUniform1iv(tex_loc, 3, &tex[0]);
   
   glEnable(GL_DEPTH_TEST);
+  
+  glClearColor(.2, .2, .8, 1.0);
 }
 
 void render_swath(int x, int y, int lod)
@@ -122,14 +130,17 @@ void testbed_draw(int argc, char **argv)
   struct timeval tv;
   gettimeofday(&tv, NULL);
   float angle = (tv.tv_sec%12 + (tv.tv_usec/1000000.0))/12 * M_PI * 2;
+  sg_Vector3 position = (sg_Vector3){-50 + sin(angle)*50, 20, -50 + cos(angle)*50};
   sg_Matrix mat = sg_Matrix_mul(
     sg_Matrix_perspective(30, 4/3.0, 0.1, 1000),
     sg_Matrix_mul(
-      sg_Matrix_rotate_v(angle, (sg_Vector3){0.0995,0.995,0}),
-      sg_Matrix_translate((sg_Vector3){-50, 12, -50})
+      sg_Matrix_rotate_v(-angle + M_PI, (sg_Vector3){0.0995,0.995,0}),
+      sg_Matrix_translate(position)
     )
   );
   glUniformMatrix4fv(mvp_loc, 1, GL_TRUE, (const GLfloat*)&mat.data);
+  glUniform3f(pos_loc, -position.x, position.y, -position.z);
+  glUniform2f(center_loc, seed*100, seed*100);
   
   int x,y;
   for (y = -1; y <= 1; y++) {
