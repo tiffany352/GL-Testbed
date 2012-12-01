@@ -84,3 +84,10 @@ GLfloat *obj_to_vbo(obj_mesh *mesh, enum obj_vertextype vertex,
   enum obj_facetype face, enum obj_vbolayout layout, size_t *size);
 
 GLuint obj_to_gl(obj_mesh *mesh, GLint *count);
+
+void obj_bindmtl(obj_mtl mtl, GLuint program, const char *ambient, 
+  const char *diffuse, const char *specular, const char *specular_co, 
+  const char *transparency);
+
+void obj_bindmtl_defaults(obj_mtl mtl, GLuint program);
+  

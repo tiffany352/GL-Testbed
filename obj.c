@@ -36,16 +36,39 @@ struct obj_ctx {
   int line;
 };
 
+static struct cache_entry {
+  struct obj_line **data;
+  size_t length, capacity;
+} obj_lookup_cache[11];
+
+static void *resize(void *ptr, size_t oldsize, size_t newsize)
+{
+  void *new = malloc(newsize);
+  if (ptr)
+    memcpy(new, ptr, oldsize);
+  free(ptr);
+  return new;
+}
+
+static void cache_append(struct obj_line* l) {
+  struct cache_entry *e = &obj_lookup_cache[l->type];
+  if (e->length >= e->capacity) {
+    size_t size = e->capacity * sizeof(struct obj_line*);
+    if (size == 0)
+      size = 50 * sizeof(struct obj_line*); // start us off with a large cache
+    e->data = resize(e->data, size, size*2);
+    e->capacity = size*2 / sizeof(struct obj_line*);
+  }
+  e->data[e->length] = l;
+  e->length++;
+}
+
 static struct obj_line* obj_lookup(const struct obj_ctx* ctx, enum obj_line_type t, int i)
 {
-  struct obj_line *cur = ctx->first;
-  while (cur) {
-    if (cur->type == t)
-      i--;
-    if (i == 0)
-      return cur;
-    cur = cur->next;
-  }
+  if (obj_lookup_cache[t].length >= i && i > 0)
+    return obj_lookup_cache[t].data[i-1];
+  fprintf(stderr, "Invalid index %i (max %u)\n", i, obj_lookup_cache[t].length);
+  return NULL;
 }
 
 static struct obj_line *obj_readline(const struct obj_ctx* ctx, const char *line)
@@ -153,15 +176,21 @@ static struct obj_line *obj_readline(const struct obj_ctx* ctx, const char *line
       res->line.face.num = i;
       for (i = 0; i < 4; i++) {
         struct obj_line *o;
-        o = obj_lookup(ctx, OBJ_VERTEX, v[i]);
-        if (o)
-          memcpy(&res->line.face.vertices[i], &o->line.vertex, sizeof(obj_vertex));
-        o = obj_lookup(ctx, OBJ_TEXCOORD, vt[i]);
-        if (o)
-          memcpy(&res->line.face.texcoords[i], &o->line.texcoord, sizeof(obj_texcoord));
-        o = obj_lookup(ctx, OBJ_NORMAL, vn[i]);
-        if (o)
-          memcpy(&res->line.face.normals[i], &o->line.normal, sizeof(obj_normal));
+        if (v[i]) {
+          o = obj_lookup(ctx, OBJ_VERTEX, v[i]);
+          if (o)
+            memcpy(&res->line.face.vertices[i], &o->line.vertex, sizeof(obj_vertex));
+        }
+        if (vt[i]) {
+          o = obj_lookup(ctx, OBJ_TEXCOORD, vt[i]);
+          if (o)
+            memcpy(&res->line.face.texcoords[i], &o->line.texcoord, sizeof(obj_texcoord));
+        }
+        if (vn[i]) {
+          o = obj_lookup(ctx, OBJ_NORMAL, vn[i]);
+          if (o)
+            memcpy(&res->line.face.normals[i], &o->line.normal, sizeof(obj_normal));
+        }
       }
       break;
       face_error:
@@ -339,6 +368,7 @@ static struct mtl_file *mtl_readstring(const char * data, const char *filename)
   struct mtl_file *first, 
                   *cur;
   
+  memset(obj_lookup_cache, 0, sizeof(obj_lookup_cache)); // clear the cache
   first = cur = calloc(1, sizeof(struct mtl_file));
   data_len = strlen(data);
   
@@ -397,11 +427,13 @@ obj_file obj_readstring(const char * data, obj_reader inc, const char *filename)
   int             data_len, 
                   line_len;
   const char      *line_ptr = data, 
+                  *line_end,
                   *cur_gname = NULL;
   char            *line_str;
   struct obj_line *last = NULL;
   struct mtl_file *cur_mtl_file = NULL;
   obj_mesh        *cur_mesh;
+  obj_face        *cur_face = NULL;
   
   // setup the variables
   ctx = (struct obj_ctx){NULL,0};
@@ -412,13 +444,13 @@ obj_file obj_readstring(const char * data, obj_reader inc, const char *filename)
   file.first_mesh = cur_mesh;
   
   while (line_ptr < data+data_len) {
-    line_len = 0;
-    while (line_ptr[line_len] != '\n' && line_ptr[line_len] != '\0') 
-      line_len++;
+    line_end = strchr(line_ptr, '\n');
+    line_len = line_end - line_ptr;
+    if (!line_end) line_end = data+data_len;
     line_str = malloc(line_len + 1);
     memcpy(line_str, line_ptr, line_len);
     line_str[line_len] = 0;
-    line_ptr += line_len + 1;
+    line_ptr = line_end+1;
     
     struct obj_line *line = obj_readline(&ctx, line_str);
     if (last) last->next = line;
@@ -430,6 +462,11 @@ obj_file obj_readstring(const char * data, obj_reader inc, const char *filename)
       case OBJ_ERROR:
         fprintf(stderr, "[%s:%i] %s: %s\n", filename, ctx.line, line->line.error, line_str);
         break;
+      case OBJ_VERTEX:
+      case OBJ_TEXCOORD:
+      case OBJ_NORMAL:
+        cache_append(line);
+        break;
       case OBJ_MTLLIB: {
         // load the mtl file and parse it
         free(cur_mtl_file);
@@ -437,11 +474,11 @@ obj_file obj_readstring(const char * data, obj_reader inc, const char *filename)
         break;
       }
       case OBJ_FACE:
-        if (cur_mesh->first_face) {
-          obj_face *cur = cur_mesh->first_face;
-          while (cur->next) cur = cur->next;
-          cur->next = &line->line.face;
-        } else cur_mesh->first_face = &line->line.face;
+        if (cur_face)
+          cur_face->next = &line->line.face;
+        else
+          cur_mesh->first_face = &line->line.face;
+        cur_face = &line->line.face;
         break;
       case OBJ_ONAME:
         if (cur_mesh->name) {
@@ -572,7 +609,7 @@ GLuint obj_to_gl(obj_mesh *mesh, GLint *count)
   GLfloat *data;
   size_t size, stride;
   
-  stride = sizeof(obj_vertex) + sizeof(obj_texcoord) + sizeof(obj_normal);
+  stride = sizeof(GLfloat) * 10;
   glGenBuffers(1, &buf);
   glBindBuffer(GL_ARRAY_BUFFER, buf);
   data = obj_to_vbo(mesh, OBJ_XYZW, OBJ_UVW, OBJ_NORMALS, 
@@ -583,13 +620,36 @@ GLuint obj_to_gl(obj_mesh *mesh, GLint *count)
   
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, NULL);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, 
-    (void*)sizeof(obj_vertex));
+    (void*)(sizeof(GLfloat)*4));
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride,
-    (void*)(sizeof(obj_vertex)+sizeof(obj_texcoord)));
+    (void*)(sizeof(GLfloat)*7));
   
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glEnableVertexAttribArray(2);
   
   return buf;
+}
+
+void obj_bindmtl(obj_mtl mtl, GLuint program, const char *ambient, 
+  const char *diffuse, const char *specular, const char *specular_co, 
+  const char *transparency)
+{
+  GLuint  ambient_loc       = glGetUniformLocation(program, ambient), 
+          diffuse_loc       = glGetUniformLocation(program, diffuse), 
+          specular_loc      = glGetUniformLocation(program, specular), 
+          specular_co_loc   = glGetUniformLocation(program, specular_co), 
+          transparency_loc  = glGetUniformLocation(program, transparency);
+  
+  glUniform3fv(ambient_loc,     1, mtl.ambient);
+  glUniform3fv(diffuse_loc,     1, mtl.diffuse);
+  glUniform3fv(specular_loc,    1, mtl.specular);
+  glUniform1f(specular_co_loc,  mtl.specular_co);
+  glUniform1f(transparency_loc, mtl.transparency);
+}
+
+void obj_bindmtl_defaults(obj_mtl mtl, GLuint program)
+{
+  obj_bindmtl(mtl, program, "ambient", "diffuse", "specular", "specular_co", 
+    "transparency");
 }
